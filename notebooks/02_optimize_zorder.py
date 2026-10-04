@@ -157,6 +157,24 @@ print(
 )
 
 # %% [markdown]
+# ## 📊 Phân tích kết quả (NB2)
+#
+# **Small-file problem.** 200 lần append tạo **200 file** nhỏ (≥ 100 theo rubric). Mỗi file chứa
+# `user_id` ngẫu nhiên trên toàn dải 1–100 000, nên min/max của mọi file đều phủ gần hết dải
+# và stats không loại được file nào: truy vấn điểm `user_id = 4242` phải mở cả 200 file.
+#
+# **Sau OPTIMIZE + Z-ORDER.** Còn **55 file** (target 256 KB, cố ý không gộp thành 1 file —
+# một file thì không còn gì để prune). Z-order sắp xếp lại dữ liệu theo `user_id` nên mỗi
+# file có dải `[min, max]` gần như không chồng lấn (xem bảng range ở trên); chỉ **1/55** file
+# chứa 4242 → **files-pruned ratio 55×** (ngưỡng 10×). Con số này tất định vì nó đọc từ stats
+# trong log, không phụ thuộc máy.
+#
+# **Speedup** đo bằng wall-clock (median 3 lần) cũng vượt 3× trong lần chạy được lưu ở trên,
+# nhưng là con số nhiễu: phụ thuộc cache hệ điều hành, CPU đang bận và kích thước dữ liệu
+# nhỏ của lab. Vì vậy rubric chấp nhận pruning ratio làm bằng chứng thay thế — số file phải
+# mở tỷ lệ thuận với số request GET/IO trên object storage, là chi phí thật ở production.
+
+# %% [markdown]
 # ## ✅ Deliverable check
 # - [ ] Speedup ≥ 3× **or** files-pruned ratio ≥ 10× (slide §6 allows either)
 # - [ ] File count dropped substantially after compact()

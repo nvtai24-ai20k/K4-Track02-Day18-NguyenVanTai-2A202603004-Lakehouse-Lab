@@ -374,6 +374,29 @@ and the lifecycle is enforced by the table itself.
 """)
 
 # %% [markdown]
+# ## 📊 Phân tích kết quả (NB7)
+#
+# **Inline blob vs pointer.** Tổng byte gần như bằng nhau (12.5 MB) — byte phải nằm ở đâu đó. Truy vấn
+# phân tích `GROUP BY topic` chỉ đọc **1.2 KB** ở cả hai layout nhờ column pruning: cột blob không bị
+# chạm. Nhưng **random access** thì khác: file inline có 1 row group 200 dòng (12.5 MB); Parquet chỉ đọc
+# được ở mức *column chunk của row group*, nên lấy **1 frame 64 KB** phải đọc cả 12.5 MB →
+# **amplification 200×** (ngưỡng 5×). Pointer layout chỉ cần 1 GET 64 KB. Đây là lý do workload
+# training/GPU đọc ngẫu nhiên cần pointer hoặc định dạng như Lance.
+#
+# **int8 quantization.** 1 024 B → 256 B mỗi vector (4× trong bộ nhớ); trên đĩa 2.6 MB → 452 KB
+# (**5.8×**, ngưỡng 3×, vì int8 nén tốt hơn). **recall@10 = 0.904** (ngưỡng 0.80) và **topic fidelity =
+# 1.000** (ngưỡng 0.95): ~10% ID bị hoán đổi với láng giềng gần tương đương nhưng mọi kết quả vẫn đúng
+# chủ đề — với RAG, exact-ID recall đánh giá thấp chất lượng thật.
+#
+# **Semantic search bằng SQL.** `array_cosine_similarity(emb::FLOAT[256], …)` trả top-5 đều thuộc topic
+# `storage`. Delta đọc vector ra `list<float>` (mất kích thước cố định) nên phải cast. Brute-force
+# ~14 ms/2 000 vector, ngoại suy ~7 s/1M → bảng là system-of-record, vector DB là index dẫn xuất.
+#
+# **Lifecycle bug.** Xóa 8 doc của `user_042`: bảng **0 hit**, external index vẫn **8 hit** — index chỉ
+# sync một chiều kiểu upsert nên không bao giờ nhận delete. CDF ghi **8 delete event** kèm `doc_id` →
+# index phải subscribe các event này (hoặc giữ vector ngay trong hàng để vòng đời do bảng quản lý).
+
+# %% [markdown]
 # ## ✅ NB7 pass criteria
 #
 # | Check | Target |

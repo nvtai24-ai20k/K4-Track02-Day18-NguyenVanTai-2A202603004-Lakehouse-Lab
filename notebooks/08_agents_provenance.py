@@ -450,6 +450,30 @@ physical files. Retention and VACUUM must be considered separately (NB6),
 as must any copies or derived artifacts outside this table.""")
 
 # %% [markdown]
+# ## 📊 Phân tích kết quả (NB8)
+#
+# **Trajectory medallion.** 1 578 bước (300 session) → Silver partition theo `agent_version`
+# (`policy-v2`, `policy-v3`) → Gold 2 dòng: success rate 0.76 vs 0.753, avg 5.26 bước, chi phí gần
+# bằng nhau — so sánh policy trở thành một query trên Gold.
+#
+# **Version pin.** Training run ghi `table_version = 0`, `n_steps_seen = 1 578`. Sau khi có thêm rollout
+# (v1, 1 978 bước), đọc lại ở v0 vẫn ra **1 578** → khớp. Một số nguyên version là thứ biến run thành tái
+# lập được. Giới hạn: replay chỉ so **số bước**, chưa so nội dung từng dòng (có thể thêm checksum).
+#
+# **Lớp MCP mô phỏng (offline).** 5 lượt `list_tables` → **1** lần đọc catalog (4 lượt sau dùng cache
+# phiên; cache đo ở `list_tables`, không phải `tools/list`). `delete_rows` chưa xác nhận trả
+# `input_required`; sau khi truyền `confirmed` trả `ok` — nhưng cờ này do bên gọi cung cấp nên **không
+# phải ranh giới phân quyền**. `submit_scan` → poll 3 lần → `completed` (300 dòng); task là mô phỏng cục bộ.
+#
+# **Provenance.** 4 bucket minh họa + `UNCLASSIFIED` đều là partition trên đĩa; 334/2 000 dòng
+# (`license=unknown`) bị loại → tập train 1 666 dòng, được ghi vào manifest kèm `corpus_version`.
+# Hạn chế: mapping gán CC-BY-4.0 vào `public_domain` dù CC-BY yêu cầu ghi công; `user-owned` + consent
+# chưa chứng minh đã kiểm tra opt-out — không dùng để kết luận pháp lý.
+#
+# **Erasure.** `user_007`: 8 → **0** dòng ở version hiện tại (v1), và biết được các dòng đó từng thuộc
+# bucket nào. Nhưng v0 vẫn chứa dữ liệu cho tới khi VACUUM (NB6) — xóa logic ≠ xóa vật lý.
+
+# %% [markdown]
 # ## ✅ NB8 pass criteria
 #
 # | Check | Target |

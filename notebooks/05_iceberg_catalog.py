@@ -278,6 +278,30 @@ print(f"Total rows readable across BOTH specs: {tbl.scan().to_arrow().num_rows:,
 print("\nTwo layouts, one table, zero rewrites. This is the feature.")
 
 # %% [markdown]
+# ## 📊 Phân tích kết quả (NB5)
+#
+# **Catalog là control plane.** Bảng được tạo qua `SqlCatalog` (`lake.llm_events`); catalog giữ
+# con trỏ tới `metadata.json` hiện hành, nên mọi engine hỏi catalog sẽ thấy cùng một trạng thái.
+# Partition spec là `day(ts)` → field `ts_day` **không phải cột người dùng ghi**, nó được suy ra.
+#
+# **Hidden partitioning: pruning 10×.** Không filter: `plan_files()` trả 10 file; filter trên `ts`
+# (một ngày): **1 file** → **10×** (ngưỡng 5×), 500 dòng. Pruning xảy ra vì Iceberg áp transform
+# `day()` lên predicate của `ts` và so với giá trị partition lưu trong manifest — người dùng không
+# cần biết cột partition. Với Hive, quên `WHERE dt=…` là đọc cả 10 file (≈ $220/ngày ở 10K truy vấn
+# theo phép tính minh họa).
+#
+# **Metadata ba tầng.** metadata.json → 10 manifest list (1/snapshot) → 10 manifest → 10 data file.
+# Metadata ~138 KB so với data ~47 KB (**~290%**) vì mỗi file chỉ 500 dòng; ở 512 MB/file tỷ lệ
+# còn ~0.1%. File nhỏ phạt hai lần: thêm data file **và** thêm metadata phải plan.
+#
+# **Field ID.** `latency_ms → latency_millis` giữ **field_id = 4**: Iceberg định danh cột bằng ID chứ
+# không bằng tên/vị trí, nên rename chỉ sửa metadata, không ghi lại dữ liệu; file cũ vẫn đọc đúng.
+# Thêm `tier` (id 6) → dòng cũ đọc ra NULL.
+#
+# **Partition evolution.** Sau `update_spec()` thêm `identity(model)`, data file dùng **spec 1 và 2**
+# cùng tồn tại; cả 5 500 dòng vẫn đọc được — layout mới chỉ áp cho dữ liệu ghi sau, không migration.
+
+# %% [markdown]
 # ## ✅ NB5 pass criteria
 #
 # | Check | Target |

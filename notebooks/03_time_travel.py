@@ -115,6 +115,29 @@ for h in final_history:
 print(f"\nTotal versions: {len(final_history)}  (target ≥ 5)")
 
 # %% [markdown]
+# ## 📊 Phân tích kết quả (NB3)
+#
+# | Version | Thao tác | Ý nghĩa |
+# |---|---|---|
+# | v0 | WRITE | 100 000 khách hàng ban đầu |
+# | v1 | WRITE (overwrite, `schema_mode="overwrite"`) | thêm cột `tier` |
+# | v2 | **MERGE** | nguồn 100 000 dòng: **50 000 update** (id 50K–99K) + **50 000 insert** (id 100K–149K) → 150 000 dòng |
+# | v3 | WRITE (append) | 50 dòng lỗi `score = -1` |
+# | v4 | **RESTORE** về v2 | bỏ dữ liệu lỗi |
+#
+# **MERGE.** Metrics cho thấy delta-rs quét 1 file đích, ghi lại 1 file (copy-on-write:
+# 50 000 dòng không đổi được copy sang file mới) — upsert 100K dòng thành công trong một
+# transaction nguyên tử.
+#
+# **Time travel.** `version=0` vẫn đọc được 100 000 dòng và schema v1 có `tier`: mỗi version là
+# một tập file được log mô tả, nên đọc version cũ chỉ là replay log tới version đó.
+#
+# **RESTORE** không xóa lịch sử: nó tạo **v4** mới (re-add file của v2, remove file v3 thêm vào),
+# nên `history()` có **5 version gồm cả RESTORE** và số dòng `score < 0` = **0**. RESTORE nhanh
+# (hàng chục ms) vì chỉ ghi metadata, không ghi lại dữ liệu. Lưu ý: v3 vẫn có thể time-travel
+# cho tới khi VACUUM dọn file của nó (NB6) — rollback ≠ xóa vật lý.
+
+# %% [markdown]
 # ## ✅ Deliverable check
 # - [ ] history() shows ≥ 5 versions (incl. RESTORE itself)
 # - [ ] MERGE 100K finished in < 60s (likely < 1s on lightweight path)
