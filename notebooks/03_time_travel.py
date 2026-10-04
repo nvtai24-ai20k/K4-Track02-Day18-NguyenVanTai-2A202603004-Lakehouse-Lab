@@ -139,9 +139,9 @@ print(f"\nTotal versions: {len(final_history)}  (target ≥ 5)")
 
 # %% [markdown]
 # ## ✅ Deliverable check
-# - [ ] history() shows ≥ 5 versions (incl. RESTORE itself)
-# - [ ] MERGE 100K finished in < 60s (likely < 1s on lightweight path)
-# - [ ] RESTORE finished in < 30s and removed bad rows
+# - [x] history() shows ≥ 5 versions (incl. RESTORE itself)
+# - [x] MERGE 100K finished in < 60s (likely < 1s on lightweight path)
+# - [x] RESTORE finished in < 30s and removed bad rows
 
 # %%
 ops = [h["operation"] for h in final_history]

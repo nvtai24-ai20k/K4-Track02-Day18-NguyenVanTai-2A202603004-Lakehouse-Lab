@@ -145,10 +145,10 @@ print(tier_counts)
 
 # %% [markdown]
 # ## ✅ Deliverable check
-# - [ ] `_delta_log/` contains JSON files
-# - [ ] Schema enforcement blocked the bad write
-# - [ ] schema_mode="merge" added the `tier` column
-# - [ ] DuckDB query returned 2 tier groups
+# - [x] `_delta_log/` contains JSON files
+# - [x] Schema enforcement blocked the bad write
+# - [x] schema_mode="merge" added the `tier` column
+# - [x] DuckDB query returned 2 tier groups
 # The schema-enforcement flag is computed from the bad-write cell: the write
 # must raise *and* the table version must not advance.
 

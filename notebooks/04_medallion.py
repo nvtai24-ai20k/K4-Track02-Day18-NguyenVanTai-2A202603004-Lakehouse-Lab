@@ -204,7 +204,7 @@ print(
 
 # %% [markdown]
 # ## ✅ Deliverable check
-# - [ ] All three tables exist under `_lakehouse/{bronze,silver,gold}/`
-# - [ ] Silver has fewer rows than Bronze (dedup worked)
-# - [ ] Gold spans ≥ 7 dates × 3 models (slide §8 medallion contract)
-# - [ ] Cost & error_rate columns populated and non-zero
+# - [x] All three tables exist under `_lakehouse/{bronze,silver,gold}/`
+# - [x] Silver has fewer rows than Bronze (dedup worked)
+# - [x] Gold spans ≥ 7 dates × 3 models (slide §8 medallion contract)
+# - [x] Cost & error_rate columns populated and non-zero
